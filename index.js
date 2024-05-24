@@ -32,7 +32,7 @@ app.route('/api/users')
 })
 .post(function postUser(req,res) {
   let user = {
-    username: `${req.body.username}`,
+    username: req.body.username,
     _id:`${id}`,
     excercises:[]
   };
@@ -56,20 +56,46 @@ function postExcercise(req,res) {
     excercise.date = new Date().toDateString();
   };
   user.excercises.push(excercise);
-  console.log(user);
-  res.json(user);
+  //console.log(user);
+  res.send(user);
 });
 
 app.get('/api/users/:_id/logs',
 function getLogs(req,res){
   let {_id} = req.params;
   let user = getUser(_id);
+  let exs = user.excercises;
+
   let logs = {
-    count : user.excercises.length,
-    log : user.excercises
-  }
+    log:exs
+  };
+
+  let {from,to} = req.query;
+  let fromArr=[];
+  let toArr=[];
+
+  if (from) {
+    for (const ex of exs) {
+      if (new Date(ex.date) > new Date(from)) {
+        fromArr.push(ex);
+      }
+    }
+  };
+  if (to) {
+    for (const ex of exs) {
+      if (new Date(ex.date) < new Date(to)) {
+        toArr.push(ex);
+      }
+    }
+  };
+  let filteredLog = fromArr.concat(toArr);
+  if (filteredLog.length>0) {
+    logs.log = filteredLog
+  };
+  logs.count = logs.log.length;
+  
   console.log(logs);
-  res.json(logs);
+  res.send(logs);
 });
 
 const listener = app.listen(process.env.PORT || 3000, () => {
