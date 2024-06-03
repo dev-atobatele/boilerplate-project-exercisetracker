@@ -16,10 +16,9 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 
 let users = [];
-let id = 1;
-function getUser(id) {
+function getUser(_id) {
   for (const user of users) {
-    if (user._id==id) {
+    if (user._id==_id) {
       return user;
     }
   }
@@ -31,15 +30,14 @@ app.route('/api/users')
   res.json(users);
 })
 .post(function postUser(req,res) {
-  let user = {
-    username: req.body.username,
-    _id:`${id}`,
-    excercises:[]
+  let body = req.body.username;
+  let User = {
+    username: body.slice(0,body.lastIndexOf('_')),
+    _id: body.slice(body.lastIndexOf('_')+1),
   };
   //console.log(user);
-  res.json(user);
-  id+=1;
-  users.push(user);
+  res.json(User);
+  users.push(User);
 });
 
 app.post('/api/users/:_id/exercises',
@@ -47,55 +45,35 @@ function postExcercise(req,res) {
   let body = req.body;
   let {_id} = req.params;
   let user = getUser(_id);
-  let excercise = {
+  let Exercise = {
+    ...user,
     description:body.description,
     duration:Number(body.duration),
     date:new Date(body.date).toDateString()
   };
   if (!body.date) {
-    excercise.date = new Date().toDateString();
+    Exercise.date = new Date().toDateString();
   };
-  user.excercises.push(excercise);
-  //console.log(user);
-  res.send(user);
+  if (!user.exs) {
+    user.exs = [];
+  };
+  user.exs.push(Exercise);
+  //console.log(Exercise);
+  res.send(Exercise);
 });
 
 app.get('/api/users/:_id/logs',
 function getLogs(req,res){
   let {_id} = req.params;
   let user = getUser(_id);
-  let exs = user.excercises;
-
-  let logs = {
-    log:exs
+  //console.log(user)
+  let Log = {
+    ...user,
+    count:user.exs.length,
+    log:user.exs
   };
-
-  let {from,to} = req.query;
-  let fromArr=[];
-  let toArr=[];
-
-  if (from) {
-    for (const ex of exs) {
-      if (new Date(ex.date) > new Date(from)) {
-        fromArr.push(ex);
-      }
-    }
-  };
-  if (to) {
-    for (const ex of exs) {
-      if (new Date(ex.date) < new Date(to)) {
-        toArr.push(ex);
-      }
-    }
-  };
-  let filteredLog = fromArr.concat(toArr);
-  if (filteredLog.length>0) {
-    logs.log = filteredLog
-  };
-  logs.count = logs.log.length;
-  
-  console.log(logs);
-  res.send(logs);
+  //console.log(Log);
+  res.send(Log);
 });
 
 const listener = app.listen(process.env.PORT || 3000, () => {
